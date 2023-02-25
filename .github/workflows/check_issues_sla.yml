@@ -3,6 +3,7 @@ name: Tag unassigned issues
 on:
   schedule:
     - cron: "*/5 * * * *"
+  workflow_dispatch:
 
 jobs:
   tag_unassigned_issues:
