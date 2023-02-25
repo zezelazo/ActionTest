@@ -10,33 +10,18 @@ on:
 
 # Define the job that the workflow will run
 jobs:
-  tag_unassigned_issues:
-    # Define the environment that the job will run on
+  tag-issues:
     runs-on: ubuntu-latest
 
-    # Define the steps that the job will take
     steps:
-      # Step 1: Install PowerShell
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
       - name: Install PowerShell
-        uses: appleboy/gh-actions/powershell@master
-        with:
-          # Use PowerShell 7
-          pwsh: '7'
+        uses: microsoft/setup-powershell@v1.0.4
 
-      # Step 2: Verify GitHub CLI
-      - name: Verify GitHub CLI
-        run: |
-          # Check if the GitHub CLI is installed
-          if ! command -v gh &> /dev/null
-          then
-              # If it isn't, install it
-              echo "GitHub CLI is not installed. Installing now..."
-              sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0
-              sudo apt-add-repository https://cli.github.com/packages
-              sudo apt update
-              sudo apt install gh
-          fi
-
+      - name: Verify GitHub CLI is installed
+        run: gh --version
       # Step 3: Check for unassigned issues
       - name: Check for unassigned issues
         run: |
