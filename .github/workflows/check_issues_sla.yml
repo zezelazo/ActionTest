@@ -29,53 +29,49 @@ jobs:
 
       - name: Verify GitHub CLI is installed
         run: gh --version
-      # Step 3: Check for unassigned issues
-      - name: Check for unassigned issues
+      
+      
+      # Retrieve a list of issues and parse them as JSON
+      - name: List issues
+        shell: pwsh
         run: |
-          # Get all open issues that are not assigned to anyone and not labeled as 'type-repo_work'
-          $issues = gh issue list --state open --assignee none --label -type-repo_work --json number,title,labels,url,created_at | jq -c '.[]'
+          $issues = gh issue list --json "number,title,created_at,labels"
+          $issues_decoded = $issues | ConvertFrom-Json
+          Write-Host "Retrieved a total of $($issues_decoded.Count) issues."
+          
+      # Loop through the list of issues and tag them as necessary
+      - name: Tag issues
+        shell: pwsh
+        run: |
+          $time_threshold = [DateTime]::UtcNow.AddMinutes(-6).ToString("o")
+          $blocker_tag = "blocker"
+          $non_blocker_tag = "non-blocker"
+          $ignored_tag = "type-repo_work"
 
-          # Loop through each unassigned issue
-          foreach ($issue in $issues) {
-            # Parse the issue object from JSON and extract relevant properties
-            $issue_object = $issue | ConvertFrom-Json
-            $issue_number = $issue_object.number
-            $issue_title = $issue_object.title
-            $issue_labels = $issue_object.labels.name
-            $issue_url = $issue_object.url
-            $issue_created_at = $issue_object.created_at
+          foreach ($issue in $issues_decoded) {
+            $issue_number = $issue.number
+            $issue_title = $issue.title
+            $issue_created_at = $issue.created_at
+            $issue_labels = $issue.labels.name
 
-            # Check if the issue has a 'type-repo_work' tag
-            if ($issue_labels -contains "type-repo_work") {
-              # If it does, ignore the issue and move on to the next one
-              Write-Host "Ignoring issue $issue_number as it has 'type-repo_work' tag."
-              continue
-            }
-
-            # Check if the issue has a 'blocker' tag
-            if ($issue_labels -contains "blocker") {
-              # If it does, add the 'out-tte' tag if it's not assigned after 3 minutes
-              $time_threshold = (Get-Date).AddMinutes(-3)
+            if ($issue_labels.Contains($ignored_tag)) {
+              Write-Host "Skipping issue $issue_number ($issue_title) as it has the '$ignored_tag' tag."
+            } elseif ($issue_labels.Contains($blocker_tag)) {
               if ([DateTime]::Parse($issue_created_at) -lt $time_threshold) {
-                gh issue label add $issue_number out-tte
-                Write-Host "Added 'out-tte' tag to issue $issue_number ($issue_title) as it was unassigned for more than 3 minutes."
-              } else {
                 Write-Host "Skipping issue $issue_number ($issue_title) as it is still within the 3 minute threshold."
+              } elseif ($issue.assignee) {
+                Write-Host "Skipping issue $issue_number ($issue_title) as it already has an assigned user."
+              } else {
+                gh issue label add $issue_number out-tte
+                Write-Host "Added 'out-tte' tag to issue $issue_number ($issue_title) as it was unassigned for more than 3 minutes and has the 'blocker' tag."
               }
             } else {
-              # If it doesn't, add the 'non-blocker' tag if it's not assigned after 6 minutes
-              # Also, add the 'blocker' tag if it doesn't have any tag yet
-              $time_threshold = (Get-Date).AddMinutes(-6)
               if ([DateTime]::Parse($issue_created_at) -lt $time_threshold) {
-                if ($issue_labels.Length -eq 0) {
-                  gh issue label add $issue_number blocker
-                  Write-Host "Added 'blocker' tag to issue $issue_number ($issue_title) as it didn't have any tag yet."
-                } else {
-                  gh issue label add $issue_number non-blocker
-                  Write-Host "Added 'non-blocker' tag to issue $issue_number ($issue_title) as it was unassigned for more than 6 minutes and didn't have the 'blocker' tag."
-                }
+                gh issue label add $issue_number blocker
+                Write-Host "Added 'blocker' tag to issue $issue_number ($issue_title) as it didn't have any tag yet."
               } else {
-                Write-Host "Skipping issue $issue_number ($issue_title) as it is still within the 6 minute threshold."
+                gh issue label add $issue_number non-blocker
+                Write-Host "Added 'non-blocker' tag to issue $issue_number ($issue_title) as it was unassigned for more than 6 minutes and didn't have the 'blocker' tag."
               }
             }
           }
