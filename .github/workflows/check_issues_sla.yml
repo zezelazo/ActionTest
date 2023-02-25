@@ -44,7 +44,7 @@ jobs:
           $non_blocker_tag = "non-blocker"
           $ignored_tag = "type-repo_work"
 
-          $issues = gh issue list --json "number,title,createdAt,labels"
+          $issues = gh issue list --json "number,title,createdAt,labels,assignees"
           $issues_decoded = $issues | ConvertFrom-Json
 
           Write-Host "Retrieved a total of $($issues_decoded.Count) issues."
@@ -54,7 +54,7 @@ jobs:
             $issue_title = $issue.title
             $issue_created_at = $issue.created_at
             $issue_labels = $issue.labels.name
-            Write-Host "$($issue)"
+            Write-Host "$($issue | ConvertFrom-Json )"
             Write-Host "$($issue.labels)"
             if ($issue_labels.Contains($ignored_tag)) {
               Write-Host "Skipping issue $issue_number ($issue_title) as it has the '$ignored_tag' tag."
