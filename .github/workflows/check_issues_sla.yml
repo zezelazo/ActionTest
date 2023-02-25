@@ -13,6 +13,9 @@ jobs:
   tag-issues:
     runs-on: ubuntu-latest
 
+    env:
+      GH_TOKEN: ${{ github.token }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -38,7 +41,7 @@ jobs:
           $issues = gh issue list --json "number,title,created_at,labels"
           $issues_decoded = $issues | ConvertFrom-Json
           Write-Host "Retrieved a total of $($issues_decoded.Count) issues."
-          
+
       # Loop through the list of issues and tag them as necessary
       - name: Tag issues
         shell: pwsh
