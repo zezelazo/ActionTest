@@ -35,13 +35,6 @@ jobs:
       
       
       # Retrieve a list of issues and parse them as JSON
-      - name: List issues
-        shell: pwsh
-        run: |
-          $issues = gh issue list --json "number,title,createdAt,labels"
-          $issues_decoded = $issues | ConvertFrom-Json
-          Write-Host "Retrieved a total of $($issues_decoded.Count) issues."
-
       # Loop through the list of issues and tag them as necessary
       - name: Tag issues
         shell: pwsh
@@ -51,6 +44,8 @@ jobs:
           $non_blocker_tag = "non-blocker"
           $ignored_tag = "type-repo_work"
 
+          $issues = gh issue list --json "number,title,createdAt,labels"
+          $issues_decoded = $issues | ConvertFrom-Json
 
           Write-Host "Retrieved a total of $($issues_decoded.Count) issues."
 
