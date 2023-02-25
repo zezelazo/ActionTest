@@ -1,45 +1,67 @@
+# Name the workflow
 name: Tag unassigned issues
 
+# Define the event that triggers the workflow
 on:
+  # Run the workflow every 5 minutes
   schedule:
     - cron: "*/5 * * * *"
-  workflow_dispatch:
 
+# Define the job that the workflow will run
 jobs:
   tag_unassigned_issues:
+    # Define the environment that the job will run on
     runs-on: ubuntu-latest
-    steps:
-      # Check out the repository
-      - name: Checkout repository
-        uses: actions/checkout@v2
 
-      # Set up PowerShell
-      - name: Set up PowerShell
-        uses: microsoft/setup-powershell@v1
-        
-      
+    # Define the steps that the job will take
+    steps:
+      # Step 1: Install PowerShell
+      - name: Install PowerShell
+        uses: appleboy/gh-actions/powershell@master
+        with:
+          # Use PowerShell 7
+          pwsh: '7'
+
+      # Step 2: Verify GitHub CLI
+      - name: Verify GitHub CLI
+        run: |
+          # Check if the GitHub CLI is installed
+          if ! command -v gh &> /dev/null
+          then
+              # If it isn't, install it
+              echo "GitHub CLI is not installed. Installing now..."
+              sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0
+              sudo apt-add-repository https://cli.github.com/packages
+              sudo apt update
+              sudo apt install gh
+          fi
+
+      # Step 3: Check for unassigned issues
       - name: Check for unassigned issues
         run: |
-          # get all open issues that are not assigned to anyone and not labeled as 'type-repo_work'
-          $issues = gh issue list --state open --assignee none --label -type-repo_work --json number,title,labels,url,created_at | ConvertFrom-Json
+          # Get all open issues that are not assigned to anyone and not labeled as 'type-repo_work'
+          $issues = gh issue list --state open --assignee none --label -type-repo_work --json number,title,labels,url,created_at | jq -c '.[]'
 
-          # loop through each unassigned issue
+          # Loop through each unassigned issue
           foreach ($issue in $issues) {
-            $issue_number = $issue.number
-            $issue_title = $issue.title
-            $issue_labels = $issue.labels.name
-            $issue_url = $issue.url
-            $issue_created_at = $issue.created_at
+            # Parse the issue object from JSON and extract relevant properties
+            $issue_object = $issue | ConvertFrom-Json
+            $issue_number = $issue_object.number
+            $issue_title = $issue_object.title
+            $issue_labels = $issue_object.labels.name
+            $issue_url = $issue_object.url
+            $issue_created_at = $issue_object.created_at
 
-            # check if the issue has a 'type-repo_work' tag
+            # Check if the issue has a 'type-repo_work' tag
             if ($issue_labels -contains "type-repo_work") {
+              # If it does, ignore the issue and move on to the next one
               Write-Host "Ignoring issue $issue_number as it has 'type-repo_work' tag."
               continue
             }
 
-            # check if the issue has a 'blocker' tag
+            # Check if the issue has a 'blocker' tag
             if ($issue_labels -contains "blocker") {
-              # if it does, add the 'out-tte' tag if it's not assigned after 3 minutes
+              # If it does, add the 'out-tte' tag if it's not assigned after 3 minutes
               $time_threshold = (Get-Date).AddMinutes(-3)
               if ([DateTime]::Parse($issue_created_at) -lt $time_threshold) {
                 gh issue label add $issue_number out-tte
@@ -48,18 +70,16 @@ jobs:
                 Write-Host "Skipping issue $issue_number ($issue_title) as it is still within the 3 minute threshold."
               }
             } else {
-              # if it doesn't, add the 'non-blocker' tag if it's not assigned after 6 minutes
-              # also, add the 'blocker' tag if it doesn't have any tag yet
+              # If it doesn't, add the 'non-blocker' tag if it's not assigned after 6 minutes
+              # Also, add the 'blocker' tag if it doesn't have any tag yet
               $time_threshold = (Get-Date).AddMinutes(-6)
               if ([DateTime]::Parse($issue_created_at) -lt $time_threshold) {
-                if ($issue_labels -eq "") {
+                if ($issue_labels.Length -eq 0) {
                   gh issue label add $issue_number blocker
-                  gh issue label add $issue_number out-tte
-                  Write-Host "Added 'blocker' and 'out-tte' tags to issue $issue_number ($issue_title) as it was unassigned for more than 6 minutes and didn't have any tags."
+                  Write-Host "Added 'blocker' tag to issue $issue_number ($issue_title) as it didn't have any tag yet."
                 } else {
                   gh issue label add $issue_number non-blocker
-                  gh issue label add $issue_number out-tte
-                  Write-Host "Added 'non-blocker' and 'out-tte' tags to issue $issue_number ($issue_title) as it was unassigned for more than 6 minutes and didn't have a 'blocker' tag."
+                  Write-Host "Added 'non-blocker' tag to issue $issue_number ($issue_title) as it was unassigned for more than 6 minutes and didn't have the 'blocker' tag."
                 }
               } else {
                 Write-Host "Skipping issue $issue_number ($issue_title) as it is still within the 6 minute threshold."
