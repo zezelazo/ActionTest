@@ -16,12 +16,16 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-
       
-      - name: Set up PowerShell
-        uses: microsoft/powershell@v1
+      - name: Set up Python
+        uses: actions/setup-python@v2
         with:
-          pwsh-version: '7.1'
+          python-version: '3.x'
+
+      - name: Install PowerShell
+        run: |
+          sudo snap install powershell --classic
+
 
       - name: Verify GitHub CLI is installed
         run: gh --version
