@@ -18,7 +18,7 @@ jobs:
         uses: microsoft/setup-powershell@v1
         
       
-        - name: Check for unassigned issues
+      - name: Check for unassigned issues
         run: |
           # get all open issues that are not assigned to anyone and not labeled as 'type-repo_work'
           $issues = gh issue list --state open --assignee none --label -type-repo_work --json number,title,labels,url,created_at | ConvertFrom-Json
