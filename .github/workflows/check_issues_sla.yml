@@ -1,0 +1,58 @@
+name: Tag unassigned issues
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+
+jobs:
+  tag_unassigned_issues:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for unassigned issues
+        run: |
+          # get all open issues that are not assigned to anyone and not labeled as 'type-repo_work'
+          $issues = gh issue list --state open --assignee none --label -type-repo_work --json number,title,labels,url,created_at | ConvertFrom-Json
+
+          # loop through each unassigned issue
+          foreach ($issue in $issues) {
+            $issue_number = $issue.number
+            $issue_title = $issue.title
+            $issue_labels = $issue.labels.name
+            $issue_url = $issue.url
+            $issue_created_at = $issue.created_at
+
+            # check if the issue has a 'type-repo_work' tag
+            if ($issue_labels -contains "type-repo_work") {
+              Write-Host "Ignoring issue $issue_number as it has 'type-repo_work' tag."
+              continue
+            }
+
+            # check if the issue has a 'blocker' tag
+            if ($issue_labels -contains "blocker") {
+              # if it does, add the 'out-tte' tag if it's not assigned after 3 minutes
+              $time_threshold = (Get-Date).AddMinutes(-3)
+              if ([DateTime]::Parse($issue_created_at) -lt $time_threshold) {
+                gh issue label add $issue_number out-tte
+                Write-Host "Added 'out-tte' tag to issue $issue_number ($issue_title) as it was unassigned for more than 3 minutes."
+              } else {
+                Write-Host "Skipping issue $issue_number ($issue_title) as it is still within the 3 minute threshold."
+              }
+            } else {
+              # if it doesn't, add the 'non-blocker' tag if it's not assigned after 6 minutes
+              # also, add the 'blocker' tag if it doesn't have any tag yet
+              $time_threshold = (Get-Date).AddMinutes(-6)
+              if ([DateTime]::Parse($issue_created_at) -lt $time_threshold) {
+                if ($issue_labels -eq "") {
+                  gh issue label add $issue_number blocker
+                  gh issue label add $issue_number out-tte
+                  Write-Host "Added 'blocker' and 'out-tte' tags to issue $issue_number ($issue_title) as it was unassigned for more than 6 minutes and didn't have any tags."
+                } else {
+                  gh issue label add $issue_number non-blocker
+                  gh issue label add $issue_number out-tte
+                  Write-Host "Added 'non-blocker' and 'out-tte' tags to issue $issue_number ($issue_title) as it was unassigned for more than 6 minutes and didn't have a 'blocker' tag."
+                }
+              } else {
+                Write-Host "Skipping issue $issue_number ($issue_title) as it is still within the 6 minute threshold."
+              }
+            }
+          }
