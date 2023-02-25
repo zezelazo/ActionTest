@@ -51,6 +51,9 @@ jobs:
           $non_blocker_tag = "non-blocker"
           $ignored_tag = "type-repo_work"
 
+
+          Write-Host "Retrieved a total of $($issues_decoded.Count) issues."
+
           foreach ($issue in $issues_decoded) {
             $issue_number = $issue.number
             $issue_title = $issue.title
