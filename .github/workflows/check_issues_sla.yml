@@ -4,8 +4,6 @@ name: Tag unassigned issues
 # Define the event that triggers the workflow
 on:
   # Run the workflow every 5 minutes
-  schedule:
-    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 # Define the job that the workflow will run
