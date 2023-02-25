@@ -38,7 +38,7 @@ jobs:
       - name: List issues
         shell: pwsh
         run: |
-          $issues = gh issue list --json "number,title,created_at,labels"
+          $issues = gh issue list --json "number,title,createdAt,labels"
           $issues_decoded = $issues | ConvertFrom-Json
           Write-Host "Retrieved a total of $($issues_decoded.Count) issues."
 
