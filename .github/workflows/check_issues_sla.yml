@@ -50,6 +50,7 @@ jobs:
           $issues_decoded = $issues | ConvertFrom-Json
 
           Write-Host "Retrieved a total of $($issues_decoded.Count) issues."
+          Write-Host "$($issues_decoded)"
 
           foreach ($issue in $issues_decoded) {
             $issue_number = $issue.number
