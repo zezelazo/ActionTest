@@ -11,9 +11,6 @@ jobs:
   tag-issues:
     runs-on: ubuntu-latest
 
-    env:
-      GH_TOKEN: ${{ github.token }}
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -27,13 +24,9 @@ jobs:
         run: |
           sudo snap install powershell --classic
 
-
       - name: Verify GitHub CLI is installed
         run: gh --version
-      
-      
-      # Retrieve a list of issues and parse them as JSON
-      # Loop through the list of issues and tag them as necessary
+
       - name: Tag issues
         shell: pwsh
         run: |
@@ -54,6 +47,7 @@ jobs:
           # Iterate over all the repo issues
           foreach ($issue in $issues) {
             
+            # If the issue has no tags, add the non_blocker_tag
             if (-not ($issue.labels.Count -gt 0)) {
               echo "Found issue $($issue.number) have no tags adding it."
               gh issue edit $issue.number --add-label $non_blocker_tag
@@ -71,5 +65,4 @@ jobs:
                 }
               }
             }
-
           }
