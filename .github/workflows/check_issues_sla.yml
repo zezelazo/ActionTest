@@ -57,7 +57,7 @@ jobs:
           
           # Parse the JSON file using PowerShell and print the labels and assignees of each issue
           $issues = Get-Content issues.json | ConvertFrom-Json
-          echo "Found $($issues) issues"
+          echo "Found $($issues.Count) issues"
 
           # Iterate over all the repo issues
           foreach ($issue in $issues) {
@@ -69,16 +69,21 @@ jobs:
 
             # Check if the issue has the ignored tag or the out tte tag, and has no assignee
             
-            if ( (-not $issue.labels.Contains($ignored_tag)) -and (-not $issue.labels.Contains($out_tte_tag))  -and (-not $issue.assignees)) {
-              if ($issue.labels.Contains($blocker_tag)) {
-                if ([DateTime]::Parse($issue.createdAt) -lt $time_threshold_blocker) {
-                  # Add the out tte tag to the issue if it is a blocker and has been open for more than 6 minutes
-                  gh issue edit $issue.number --add-label $out_tte_tag
-                }
-              } else {
-                if ([DateTime]::Parse($issue.createdAt) -lt $time_threshold_non_blocker) {
-                  # Add the out tte tag to the issue if it is not a blocker and has been open for more than 20 minutes
-                  gh issue edit $issue.number --add-label $out_tte_tag
+            if (-not $issue.assignees) {
+              if (-not $issue.labels.Contains($ignored_tag)) {
+                
+              gh issue label add $issue_number non-blocker
+              Write-Host "LABELS $issue_number ($issue.labels) condition ($issue.labels.Contains($ignored_tag))"
+                if ($issue.labels.Contains($blocker_tag)) {
+                  if ([DateTime]::Parse($issue.createdAt) -lt $time_threshold_blocker) {
+                    # Add the out tte tag to the issue if it is a blocker and has been open for more than 6 minutes
+                    gh issue edit $issue.number --add-label $out_tte_tag
+                  }
+                } else {
+                  if ([DateTime]::Parse($issue.createdAt) -lt $time_threshold_non_blocker) {
+                    # Add the out tte tag to the issue if it is not a blocker and has been open for more than 20 minutes
+                    gh issue edit $issue.number --add-label $out_tte_tag
+                  }
                 }
               }
             }
