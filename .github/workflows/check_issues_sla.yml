@@ -53,16 +53,16 @@ jobs:
           # Iterate over all the repo issues
           foreach ($issue in $issues) {
             if (-not ($issue.labels.Count -gt 0)) {
-              gh issue label add $issue.number $non_blocker_tag
+              gh issue add-label $issue.number $non_blocker_tag
             }
             if ($ignored_tag, $out_tte_tag -notin $issue_labels -and (-not $issue.assignee)) {
               if ($issue_labels.Contains($blocker_tag)) {
                 if ([DateTime]::Parse($issue_created_at) -lt $time_threshold_blocker) {
-                  gh issue label add $issue_number out_tte_tag
+                  gh issue add-label $issue_number $out_tte_tag
                 }
               } else {
                 if ([DateTime]::Parse($issue_created_at) -lt $time_threshold_non_blocker) {
-                  gh issue label add $issue_number out_tte_tag
+                  gh issue add-label $issue_number $out_tte_tag
                 }
               }
             }
