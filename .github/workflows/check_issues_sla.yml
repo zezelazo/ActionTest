@@ -60,11 +60,11 @@ jobs:
             if ($ignored_tag, $out_tte_tag -notin $issue_labels -and (-not $issue.assignee)) {
               if ($issue.labels.Contains($blocker_tag)) {
                 if ([DateTime]::Parse($issue.createdAt) -lt $time_threshold_blocker) {
-                  gh issue add-label $issue.number $out_tte_tag
+                  gh issue edit $issue.number --add-label $out_tte_tag
                 }
               } else {
                 if ([DateTime]::Parse($issue.createdAt) -lt $time_threshold_non_blocker) {
-                  gh issue add-label $issue.number $out_tte_tag
+                  gh issue edit $issue.number --add-label $out_tte_tag
                 }
               }
             }
