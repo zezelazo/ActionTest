@@ -42,38 +42,12 @@ jobs:
           $non_blocker_tag = "non-blocker"
           $ignored_tag = "type-repo_work"
 
-          $issues = gh issue list --json "number,title,createdAt,labels,assignees"
-          Write-Host "$($issues)"
-
-          $issues_decoded = $issues | ConvertFrom-Json
-
-          Write-Host "Retrieved a total of $($issues_decoded.Count) issues."
-          Write-Host "$($issues_decoded)"
-
-          foreach ($issue in $issues_decoded) {
-            $issue_number = $issue.number
-            $issue_title = $issue.title
-            $issue_created_at = $issue.created_at
-            $issue_labels = $issue.labels.name 
-            Write-Host "$($issue.labels)"
-            if ($issue_labels.Contains($ignored_tag)) {
-              Write-Host "Skipping issue $issue_number ($issue_title) as it has the '$ignored_tag' tag."
-            } elseif ($issue_labels.Contains($blocker_tag)) {
-              if ([DateTime]::Parse($issue_created_at) -lt $time_threshold) {
-                Write-Host "Skipping issue $issue_number ($issue_title) as it is still within the 3 minute threshold."
-              } elseif ($issue.assignee) {
-                Write-Host "Skipping issue $issue_number ($issue_title) as it already has an assigned user."
-              } else {
-                gh issue label add $issue_number out-tte
-                Write-Host "Added 'out-tte' tag to issue $issue_number ($issue_title) as it was unassigned for more than 3 minutes and has the 'blocker' tag."
-              }
-            } else {
-              if ([DateTime]::Parse($issue_created_at) -lt $time_threshold) {
-                gh issue label add $issue_number blocker
-                Write-Host "Added 'blocker' tag to issue $issue_number ($issue_title) as it didn't have any tag yet."
-              } else {
-                gh issue label add $issue_number non-blocker
-                Write-Host "Added 'non-blocker' tag to issue $issue_number ($issue_title) as it was unassigned for more than 6 minutes and didn't have the 'blocker' tag."
-              }
-            }
+          gh issue list --json number,labels,assignees > issues.json
+        
+          # Parse the JSON file using PowerShell and print the labels and assignees of each issue
+          $issues = Get-Content issues.json | ConvertFrom-Json
+          foreach ($issue in $issues) {
+            Write-Host "Issue #$($issue.number):"
+            Write-Host "  Labels: $($issue.labels.name -join ', ')"
+            Write-Host "  Assignees: $($issue.assignees.login -join ', ')"
           }
