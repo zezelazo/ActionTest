@@ -1,4 +1,3 @@
-# Name the workflow
 name: Tag unassigned issues
 
 # Define the event that triggers the workflow
@@ -7,34 +6,43 @@ on:
   workflow_dispatch:
 
 env:
+  # Set the value of the GH_TOKEN environment variable to the token associated with the GitHub App used to run the workflow
   GH_TOKEN: ${{ github.token }}
 
 # Define the job that the workflow will run
 jobs:
   tag-issues:
     runs-on: ubuntu-latest
+    
+    # Allow the workflow to modify issues in the repository
     permissions:
       issues: write
-      
+
     steps:
+      # Checkout the code from the repository
       - name: Checkout repository
         uses: actions/checkout@v2
       
+      # Set up the Python runtime environment
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.x'
 
+      # Install PowerShell
       - name: Install PowerShell
         run: |
           sudo snap install powershell --classic
 
+      # Verify that the GitHub CLI is installed and print its version
       - name: Verify GitHub CLI is installed
         run: gh --version
 
+      # Tag issues based on their labels, assignees, and creation time
       - name: Tag issues
         shell: pwsh
         run: |
+          # Set the time thresholds and tag names
           $time_threshold_blocker = [DateTime]::UtcNow.AddMinutes(-6).ToString("o")
           $time_threshold_non_blocker = [DateTime]::UtcNow.AddMinutes(-20).ToString("o")
           $blocker_tag = "blocking"
@@ -42,7 +50,7 @@ jobs:
           $ignored_tag = "type-repo_work"
           $out_tte_tag = "out-tte"
 
-          # Get the list of issues
+          # Get the list of issues and save it to a JSON file
           gh issue list --json number,labels,assignees,createdAt > issues.json
           
           # Parse the JSON file using PowerShell and print the labels and assignees of each issue
@@ -54,18 +62,19 @@ jobs:
             
             # If the issue has no tags, add the non_blocker_tag
             if (-not ($issue.labels.Count -gt 0)) {
-              echo "Found issue $($issue.number) have no tags adding it."
               gh issue edit $issue.number --add-label $non_blocker_tag
             }
 
-            if ($ignored_tag, $out_tte_tag -notin $issue_labels -and (-not $issue.assignee)) {
-              echo "Found issue $($issue.number) with no ignore label and with no out tte label also with no assignee"
+            # Check if the issue has the ignored tag or the out tte tag, and has no assignee
+            if ($ignored_tag, $out_tte_tag -notin $issue.labels -and (-not $issue.assignee)) {
               if ($issue.labels.Contains($blocker_tag)) {
                 if ([DateTime]::Parse($issue.createdAt) -lt $time_threshold_blocker) {
+                  # Add the out tte tag to the issue if it is a blocker and has been open for more than 6 minutes
                   gh issue edit $issue.number --add-label $out_tte_tag
                 }
               } else {
                 if ([DateTime]::Parse($issue.createdAt) -lt $time_threshold_non_blocker) {
+                  # Add the out tte tag to the issue if it is not a blocker and has been open for more than 20 minutes
                   gh issue edit $issue.number --add-label $out_tte_tag
                 }
               }
