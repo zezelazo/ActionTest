@@ -52,7 +52,8 @@ jobs:
           $ignored_tag = "type-repo_work"
           $out_tte_tag = "out-tte"
 
-          # Get the list of issues and save it to a JSON file
+          # Get the list of issues and save it to a JSON file.
+          #Filter to get onl open issues with no assignee and without specific labels
           gh issue list --json number,labels,assignees,createdAt  --search "is:open no:assignee -label:out-tte -label:type-repo_work" > issues.json
           
           # Parse the JSON file using PowerShell and print the labels and assignees of each issue
@@ -71,12 +72,12 @@ jobs:
             if (-not $issue.assignees) {
               if ($issue.labels -like $blocker_tag) {
                 if ([DateTime]::Parse($issue.createdAt) -lt $time_threshold_blocker) {
-                  # Add the out tte tag to the issue if it is a blocker and has been open for more than 6 minutes
+                  # Add the out tte tag to the issue if it is a blocker and has been open for more than 24 hours
                   gh issue edit $issue.number --add-label $out_tte_tag
                 }
               } else {
                 if ([DateTime]::Parse($issue.createdAt) -lt $time_threshold_non_blocker) {
-                  # Add the out tte tag to the issue if it is not a blocker and has been open for more than 20 minutes
+                  # Add the out tte tag to the issue if it is not a blocker and has been open for more than 48 hours
                   gh issue edit $issue.number --add-label $out_tte_tag
                 }
               }
