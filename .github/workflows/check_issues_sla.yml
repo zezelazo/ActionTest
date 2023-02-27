@@ -70,11 +70,8 @@ jobs:
             # Check if the issue has the ignored tag or the out tte tag, and has no assignee
             
             if (-not $issue.assignees) {
-              if (-not $issue.labels.Contains($ignored_tag)) {
-                
-              gh issue label add $issue_number non-blocker
-              Write-Host "LABELS $issue_number ($issue.labels) condition ($issue.labels.Contains($ignored_tag))"
-                if ($issue.labels.Contains($blocker_tag)) {
+              if (-not $issue.labels.Contains($ignored_tag)) {                
+                if ($issue.labels -like $blocker_tag) {
                   if ([DateTime]::Parse($issue.createdAt) -lt $time_threshold_blocker) {
                     # Add the out tte tag to the issue if it is a blocker and has been open for more than 6 minutes
                     gh issue edit $issue.number --add-label $out_tte_tag
