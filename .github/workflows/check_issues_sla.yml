@@ -2,8 +2,10 @@ name: Tag unassigned issues
 
 # Define the event that triggers the workflow
 on:
-  # Run the workflow every 5 minutes
   workflow_dispatch:
+    # Run the workflow every hour
+    schedule:
+    - cron: '0 * * * *'
 
 env:
   # Set the value of the GH_TOKEN environment variable to the token associated with the GitHub App used to run the workflow
@@ -43,8 +45,8 @@ jobs:
         shell: pwsh
         run: |
           # Set the time thresholds and tag names
-          $time_threshold_blocker = [DateTime]::UtcNow.AddMinutes(-6).ToString("o")
-          $time_threshold_non_blocker = [DateTime]::UtcNow.AddMinutes(-20).ToString("o")
+          $time_threshold_blocker = [DateTime]::UtcNow.AddHours(-24).ToString("o")
+          $time_threshold_non_blocker = [DateTime]::UtcNow.AddHours(-48).ToString("o")
           $blocker_tag = "blocking"
           $non_blocker_tag = "Non-Blocking"
           $ignored_tag = "type-repo_work"
