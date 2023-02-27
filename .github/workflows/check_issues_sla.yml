@@ -68,7 +68,8 @@ jobs:
             }
 
             # Check if the issue has the ignored tag or the out tte tag, and has no assignee
-            if ($ignored_tag, $out_tte_tag -notin $issue.labels -and (-not $issue.assignee)) {
+           
+            if ( (-not $issue.labels.Contains($ignored_tag)) -and (-not $issue.labels.Contains($out_tte_tag))  -and (-not $issue.assignee)) {
               if ($issue.labels.Contains($blocker_tag)) {
                 if ([DateTime]::Parse($issue.createdAt) -lt $time_threshold_blocker) {
                   # Add the out tte tag to the issue if it is a blocker and has been open for more than 6 minutes
