@@ -39,8 +39,8 @@ jobs:
         run: |
           $time_threshold_blocker = [DateTime]::UtcNow.AddMinutes(-6).ToString("o")
           $time_threshold_non_blocker = [DateTime]::UtcNow.AddMinutes(-20).ToString("o")
-          $blocker_tag = "blocker"
-          $non_blocker_tag = "non-blocker"
+          $blocker_tag = "blocking"
+          $non_blocker_tag = "Non-Blocking"
           $ignored_tag = "type-repo_work"
           $out_tte_tag = "out-tte"
 
