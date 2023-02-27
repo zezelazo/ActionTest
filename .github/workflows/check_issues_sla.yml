@@ -49,15 +49,18 @@ jobs:
           
           # Parse the JSON file using PowerShell and print the labels and assignees of each issue
           $issues = Get-Content issues.json | ConvertFrom-Json
+          echo "Found $($issues.Count) issues"
 
           # Iterate over all the repo issues
           foreach ($issue in $issues) {
             
             if (-not ($issue.labels.Count -gt 0)) {
+              echo "Found issue $($issue.number) have no tags adding it."
               gh issue edit $issue.number --add-label $non_blocker_tag
             }
 
             if ($ignored_tag, $out_tte_tag -notin $issue_labels -and (-not $issue.assignee)) {
+              echo "Found issue $($issue.number) with no ignore label and with no out tte label also with no assignee"
               if ($issue.labels.Contains($blocker_tag)) {
                 if ([DateTime]::Parse($issue.createdAt) -lt $time_threshold_blocker) {
                   gh issue edit $issue.number --add-label $out_tte_tag
