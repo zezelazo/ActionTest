@@ -37,17 +37,33 @@ jobs:
       - name: Tag issues
         shell: pwsh
         run: |
-          $time_threshold = [DateTime]::UtcNow.AddMinutes(-6).ToString("o")
+          $time_threshold_blocker = [DateTime]::UtcNow.AddMinutes(-6).ToString("o")
+          $time_threshold_non_blocker = [DateTime]::UtcNow.AddMinutes(-20).ToString("o")
           $blocker_tag = "blocker"
           $non_blocker_tag = "non-blocker"
           $ignored_tag = "type-repo_work"
+          $out_tte_tag = "out-tte"
 
+          # Get the list of issues
           gh issue list --json number,labels,assignees > issues.json
-        
+          
           # Parse the JSON file using PowerShell and print the labels and assignees of each issue
           $issues = Get-Content issues.json | ConvertFrom-Json
+
+          # Iterate over all the repo issues
           foreach ($issue in $issues) {
-            Write-Host "Issue #$($issue.number):"
-            Write-Host "  Labels: $($issue.labels.name -join ', ')"
-            Write-Host "  Assignees: $($issue.assignees.login -join ', ')"
+            if (-not ($issue.labels.Count -gt 0)) {
+              gh issue label add $issue.number $non_blocker_tag
+            }
+            if ($ignored_tag, $out_tte_tag -notin $issue_labels -and (-not $issue.assignee)) {
+              if ($issue_labels.Contains($blocker_tag)) {
+                if ([DateTime]::Parse($issue_created_at) -lt $time_threshold_blocker) {
+                  gh issue label add $issue_number out_tte_tag
+                }
+              } else {
+                if ([DateTime]::Parse($issue_created_at) -lt $time_threshold_non_blocker) {
+                  gh issue label add $issue_number out_tte_tag
+                }
+              }
+            }
           }
