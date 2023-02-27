@@ -6,6 +6,9 @@ on:
   # Run the workflow every 5 minutes
   workflow_dispatch:
 
+env:
+  GH_TOKEN: ${{ github.token }}
+
 # Define the job that the workflow will run
 jobs:
   tag-issues:
