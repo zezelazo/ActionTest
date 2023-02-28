@@ -4,8 +4,6 @@ name: Tag unassigned issues
 on:
   workflow_dispatch:
     # Run the workflow every hour
-    schedule:
-    - cron: '0 * * * *'
 
 env:
   # Set the value of the GH_TOKEN environment variable to the token associated with the GitHub App used to run the workflow
@@ -24,12 +22,7 @@ jobs:
       # Checkout the code from the repository
       - name: Checkout repository
         uses: actions/checkout@v2
-      
-      # Set up the Python runtime environment
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.x'
+  
 
       # Install PowerShell
       - name: Install PowerShell
@@ -48,7 +41,6 @@ jobs:
           $time_threshold_blocker = [DateTime]::UtcNow.AddHours(-24).ToString("o")
           $time_threshold_non_blocker = [DateTime]::UtcNow.AddHours(-48).ToString("o")
           $blocker_tag = "blocking"
-          $non_blocker_tag = "Non-Blocking"
           $ignored_tag = "type-repo_work"
           $out_tte_tag = "out-tte"
 
@@ -62,12 +54,6 @@ jobs:
 
           # Iterate over all the repo issues
           foreach ($issue in $issues) {
-            
-            # If the issue has no tags, add the non_blocker_tag
-            if (-not ($issue.labels.Count -gt 0)) {
-              gh issue edit $issue.number --add-label $non_blocker_tag
-            }
-
             # Check if the issue has the ignored tag or the out tte tag, and has no assignee
             if (-not $issue.assignees) {
               if ($issue.labels -like $blocker_tag) {
