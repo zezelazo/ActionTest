@@ -19,10 +19,7 @@ jobs:
       issues: write
 
     steps:
-      # Checkout the code from the repository
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
+    
       # Tag issues based on their labels, assignees, and creation time
       - name: Tag issues
         shell: pwsh
