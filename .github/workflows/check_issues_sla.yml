@@ -31,9 +31,11 @@ jobs:
           $ignored_tag = "type-repo_work"
           $out_tte_tag = "out-tte"
 
+          echo "REPO ${$GITHUB_REPOSITORY}"
+
           # Get the list of issues and save it to a JSON file.
           #Filter to get onl open issues with no assignee and without specific labels
-          gh issue list --repo $GITHUB_REPOSITORY --json number,labels,assignees,createdAt  --search "is:open no:assignee -label:out-tte -label:type-repo_work" > issues.json 
+          gh issue list --json number,labels,assignees,createdAt  --search "is:open no:assignee -label:out-tte -label:type-repo_work" --repo $GITHUB_REPOSITORY > issues.json 
           
           # Parse the JSON file using PowerShell and print the labels and assignees of each issue
           $issues = Get-Content issues.json | ConvertFrom-Json
