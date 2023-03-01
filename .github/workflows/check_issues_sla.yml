@@ -22,10 +22,6 @@ jobs:
       # Checkout the code from the repository
       - name: Checkout repository
         uses: actions/checkout@v2
-  
-      # Verify that the GitHub CLI is installed and print its version
-      - name: Verify GitHub CLI is installed
-        run: gh --version
 
       # Tag issues based on their labels, assignees, and creation time
       - name: Tag issues
