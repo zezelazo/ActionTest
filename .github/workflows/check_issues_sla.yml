@@ -8,6 +8,8 @@ on:
 env:
   # Set the value of the GH_TOKEN environment variable to the token associated with the GitHub App used to run the workflow
   GH_TOKEN: ${{ github.token }}
+  REPO:  ${{ github.repository }}
+  OWNER: ${{ github.repository_owner }}
 
 # Define the job that the workflow will run
 jobs:
@@ -31,11 +33,11 @@ jobs:
           $ignored_tag = "type-repo_work"
           $out_tte_tag = "out-tte"
 
-          echo "REPO ${$GITHUB_REPOSITORY}"
+          echo "REPO ${$REPO}"
 
           # Get the list of issues and save it to a JSON file.
           #Filter to get onl open issues with no assignee and without specific labels
-          gh issue list --json number,labels,assignees,createdAt  --search "is:open no:assignee -label:out-tte -label:type-repo_work" --repo $GITHUB_REPOSITORY > issues.json 
+          gh issue list --json number,labels,assignees,createdAt  --search "is:open no:assignee -label:out-tte -label:type-repo_work" --repo $REPO > issues.json 
           
           # Parse the JSON file using PowerShell and print the labels and assignees of each issue
           $issues = Get-Content issues.json | ConvertFrom-Json
