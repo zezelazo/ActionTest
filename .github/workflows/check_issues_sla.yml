@@ -19,9 +19,6 @@ jobs:
       issues: write
 
     steps:
-      # Checkout the code from the repository
-      - name: Checkout repository
-        uses: actions/checkout@v2
 
       # Tag issues based on their labels, assignees, and creation time
       - name: Tag issues
@@ -36,7 +33,7 @@ jobs:
 
           # Get the list of issues and save it to a JSON file.
           #Filter to get onl open issues with no assignee and without specific labels
-          gh issue list --json number,labels,assignees,createdAt  --search "is:open no:assignee -label:out-tte -label:type-repo_work" > issues.json
+          gh issue list --repo $GITHUB_REPOSITORY --json number,labels,assignees,createdAt  --search "is:open no:assignee -label:out-tte -label:type-repo_work" > issues.json 
           
           # Parse the JSON file using PowerShell and print the labels and assignees of each issue
           $issues = Get-Content issues.json | ConvertFrom-Json
