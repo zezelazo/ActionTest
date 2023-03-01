@@ -23,12 +23,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
   
-
-      # Install PowerShell
-      - name: Install PowerShell
-        run: |
-          sudo snap install powershell --classic
-
       # Verify that the GitHub CLI is installed and print its version
       - name: Verify GitHub CLI is installed
         run: gh --version
