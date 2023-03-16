@@ -1,0 +1,45 @@
+name: Tag comments 
+
+# Define the event that triggers the workflow
+on:
+  workflow_dispatch:
+    # Run the workflow every hour
+
+ 
+env:
+  # Set the value of the GH_TOKEN environment variable to the token associated with the GitHub App used to run the workflow
+  GH_TOKEN: ${{ github.token }}
+
+# Define the job that the workflow will run
+jobs:
+  tag-issues:
+    runs-on: ubuntu-latest
+    
+    # Allow the workflow to modify issues in the repository
+    permissions:
+      issues: write 
+      contents: read
+
+    steps:
+      # Checkout the code from the repository
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # Tag issues based on their labels, assignees, and creation time
+      - name: Tag issues
+        shell: pwsh
+        run: |
+          $ignored_tag = 'type-repo_work'
+          $area_unknown_tag = 'area-unknown'
+          
+          # Get the list of issues and filter to get only: "open issues" and  "without specific labels" and filter the issues with no "area-" label assign
+          $issues = gh issue list --json number,labels --search "is:open -label:$ignored_tag" | ConvertFrom-Json | select number, labels | where-object { $_.labels.name -notlike "area-*" }
+           
+          $response = gh api /repos/$GITHUB_REPOSITORY/discussions?per_page=100 -H "Accept: application/vnd.github.v3+json" -H "Authorization: bearer $GITHUB_TOKEN"
+          $json = $response | ConvertFrom-Json
+          foreach ($discussion in $json) {
+            if ($discussion.state -eq "open") {
+              Write-Host "Discussion: $($discussion.title)"
+              # gh api /repos/$GITHUB_REPOSITORY/issues/$($discussion.number) -X PATCH --add-labels $env:TRIAGE_LABEL -H "Accept: application/vnd.github.v3+json" -H "Authorization: bearer $GITHUB_TOKEN"
+            }
+          }
