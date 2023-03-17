@@ -27,19 +27,60 @@ jobs:
 
       # Tag issues based on their labels, assignees, and creation time
      
-      - name: Tag issues
-        shell: pwsh
-        run: |
-          $ignored_tag = 'type-repo_work'
-          $area_unknown_tag = 'area-unknown'
-          
-          # Get the list of issues and filter to get only: "open issues" and  "without specific labels" and filter the issues with no "area-" label assign
-          #$issues = gh issue list --json number,labels,title --search "is:open -label:$ignored_tag" | ConvertFrom-Json | select number, labels, title | where-object { $_.labels.name -notlike "area-*" }
-          #foreach ($issue in $issues){
-          #  Write-Host "$($issue.number) - $($issue.title)"
-          #}
+      - name: Get Discussions without Area Label
+        id: get-discussions
+        uses: palmerhq/github-graphql@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          query: |
+            query ($owner: String!, $repo: String!, $cursor: String) {
+              repository(owner: $owner, name: $repo) {
+                discussions(first: 100, after: $cursor) {
+                  pageInfo {
+                    hasNextPage
+                    endCursor
+                  }
+                  nodes {
+                    id
+                    title
+                    labels(first: 20) {
+                      nodes {
+                        name
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          variables: |
+            {
+              "owner": "${{ github.repository_owner }}",
+              "repo": "${{ github.repository }}",
+              "cursor": null
+            }
+        continue-on-error: true
 
-          $discussions = gh api /repos/${{github.repository}}/discussions -H "Accept: application/vnd.github+json"
-          foreach ($discussion in $discussions) { 
-              Write-Host "Discussion: $($discussion.title)" 
+      - name: Add Area Unknown Label
+        if: steps.get-discussions.outputs.data != null
+        run: |
+          $headers = @{
+            "Authorization" = "Bearer $env:GITHUB_TOKEN"
+            "Content-Type" = "application/json"
+          }
+          $discussions = ${{ steps.get-discussions.outputs.data }}.repository.discussions.nodes
+          foreach ($discussion in $discussions) {
+            $has_area_label = $false
+            foreach ($label in $discussion.labels.nodes) {
+              if ($label.name -like "área-*") {
+                $has_area_label = $true
+                break
+              }
+            }
+            if (!$has_area_label) {
+              Write-Host "Discussion: $($discussion.title)"
+              $body = @{
+                labels = @("area-unknown")
+              } | ConvertTo-Json
+              Invoke-RestMethod -Uri "https://api.github.com/repos/$($env:GITHUB_REPOSITORY)/discussions/$($discussion.id)/labels" -Method POST -Headers $headers -Body $body | Out-Null
+            }
           }
