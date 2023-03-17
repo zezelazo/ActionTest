@@ -59,45 +59,9 @@ jobs:
               $discussions_without_label += $discussion
             }
           }
+          
           Write-Output "Discussions without 'área-*' label: $($discussions_without_label.Count)"
           Write-Output "Discussion titles:"
           foreach ($discussion in $discussions_without_label) {
             Write-Output "- $($discussion.title)"
-          }
-
-      - name: Add Area Unknown Label
-        if: steps.get-discussions.rc == '0'
-        run: |
-          $query = @"
-            mutation AddLabelToDiscussion($discussionId: ID!, $labelName: String!) {
-              addLabelsToLabelable(input: { labelableId: $discussionId, labelIds: [$labelName] }) {
-                clientMutationId
-              }
-            }"@
-            
-          $headers = @{
-            "Authorization" = "Bearer $env:GITHUB_TOKEN"
-            "Content-Type" = "application/json"
-          }
-          $discussions = ${{ steps.get-discussions.outputs.stdout | ConvertFrom-Json }}
-          foreach ($discussion in $discussions) {
-            $has_area_label = $false
-            foreach ($label in $discussion.labels.nodes) {
-              if ($label.name -like "área-*") {
-                $has_area_label = $true
-                break
-              }
-            }
-            if (!$has_area_label) {
-              Write-Host "Adding 'area-unknown' label to discussion: $($discussion.title)"
-              $variables = @{
-                discussionId = $discussion.id
-                labelName = "area-unknown"
-              }
-              $body = @{
-                query = $query
-                variables = $variables
-              } | ConvertTo-Json
-              Invoke-RestMethod -Uri "https://api.github.com/graphql" -Method POST -Headers $headers -Body $body | Out-Null
-            }
           }
