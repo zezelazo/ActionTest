@@ -26,20 +26,18 @@ jobs:
         uses: actions/checkout@v2
 
       # Tag issues based on their labels, assignees, and creation time
-      - name: Tag issues
-        shell: pwsh
+      - name: Get and label comments without Area label
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $ignored_tag = 'type-repo_work'
-          $area_unknown_tag = 'area-unknown'
-          
-          # Get the list of issues and filter to get only: "open issues" and  "without specific labels" and filter the issues with no "area-" label assign
-          $issues = gh issue list --json number,labels --search "is:open -label:$ignored_tag" | ConvertFrom-Json | select number, labels | where-object { $_.labels.name -notlike "area-*" }
-           
-          $response = gh api /repos/$GITHUB_REPOSITORY/discussions?per_page=100 -H "Accept: application/vnd.github.v3+json" -H "Authorization: bearer $GH_TOKEN"
-          $json = $response | ConvertFrom-Json
-          foreach ($discussion in $json) {
-            if ($discussion.state -eq "open") {
-              Write-Host "Discussion: $($discussion.title)"
-              # gh api /repos/$GITHUB_REPOSITORY/issues/$($discussion.number) -X PATCH --add-labels $env:TRIAGE_LABEL -H "Accept: application/vnd.github.v3+json" -H "Authorization: bearer $GITHUB_TOKEN"
-            }
+          gh auth login --with-token <<< $GITHUB_TOKEN
+          $comments = gh issue list --json 'number,title,labels' --jq '.[] | select( any(.labels[]; .name | test("^área-")) | not )'
+          $comments | ForEach-Object {
+            $comment = $_
+            $number = $comment.number
+            $title = $comment.title
+            Write-Host "Issue without area label: $title"
+            gh issue label $number --add "área-unknow"
           }
+
+      
