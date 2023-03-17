@@ -39,7 +39,7 @@ jobs:
             Write-Host "$($issue.number) - $($issue.title)"
           }
 
-          $discussions = gh api --header 'Accept: application/vnd.github+json' --method GET  /repos/{owner}/{repo}/discussions
+          $discussions = gh api /repos/{owner}/{repo}/discussions
           foreach ($discussion in $discussions) { 
               Write-Host "Discussion: $($discussion.title)" 
           }
