@@ -73,8 +73,8 @@ jobs:
               addLabelsToLabelable(input: { labelableId: $discussionId, labelIds: [$labelName] }) {
                 clientMutationId
               }
-            }
-"@
+            }"@
+            
           $headers = @{
             "Authorization" = "Bearer $env:GITHUB_TOKEN"
             "Content-Type" = "application/json"
