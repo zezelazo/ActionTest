@@ -34,12 +34,12 @@ jobs:
           $area_unknown_tag = 'area-unknown'
           
           # Get the list of issues and filter to get only: "open issues" and  "without specific labels" and filter the issues with no "area-" label assign
-          $issues = gh issue list --json number,labels,title --search "is:open -label:$ignored_tag" | ConvertFrom-Json | select number, labels, title | where-object { $_.labels.name -notlike "area-*" }
-          foreach ($issue in $issues){
-            Write-Host "$($issue.number) - $($issue.title)"
-          }
+          #$issues = gh issue list --json number,labels,title --search "is:open -label:$ignored_tag" | ConvertFrom-Json | select number, labels, title | where-object { $_.labels.name -notlike "area-*" }
+          #foreach ($issue in $issues){
+          #  Write-Host "$($issue.number) - $($issue.title)"
+          #}
 
-          $discussions = gh api /repos/{owner}/{repo}/discussions
+          $discussions = gh api /repos/{owner}/{repo}/discussions -H "Accept: application/vnd.github+json"
           foreach ($discussion in $discussions) { 
               Write-Host "Discussion: $($discussion.title)" 
           }
