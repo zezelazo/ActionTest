@@ -39,7 +39,7 @@ jobs:
             Write-Host "$($issue.number) - $($issue.title)"
           }
 
-          $discussions =  gh api /repos/$GITHUB_REPOSITORY/discussions?per_page=100 -H "Accept: application/vnd.github.v3+json"
+          $discussions =  gh api --header 'Accept: application/vnd.github+json' --header 'X-GitHub-Api-Version:2022-11-28' --method GET  /repos/{owner}/{repo}/discussions
           foreach ($discussion in $discussions) { 
               Write-Host "Discussion: $($discussion.title)" 
           }
