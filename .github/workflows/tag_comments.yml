@@ -29,21 +29,15 @@ jobs:
      
       - name: Get Discussions without Area Label
         id: get-discussions
-        uses: palmerhq/github-graphql@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          query: |
-            query ($owner: String!, $repo: String!, $cursor: String) {
-              repository(owner: $owner, name: $repo) {
-                discussions(first: 100, after: $cursor) {
-                  pageInfo {
-                    hasNextPage
-                    endCursor
-                  }
+        run: |
+          $query = @"
+            query {
+              repository(name: "$env:GITHUB_REPOSITORY", owner: "$env:GITHUB_REPOSITORY_OWNER") {
+                discussions(first: 100) {
                   nodes {
                     id
                     title
-                    labels(first: 20) {
+                    labels(first: 10) {
                       nodes {
                         name
                       }
@@ -51,23 +45,41 @@ jobs:
                   }
                 }
               }
-            }
-          variables: |
-            {
-              "owner": "${{ github.repository_owner }}",
-              "repo": "${{ github.repository }}",
-              "cursor": null
-            }
-        continue-on-error: true
-
-      - name: Add Area Unknown Label
-        if: steps.get-discussions.outputs.data != null
-        run: |
+            }"@
+            
           $headers = @{
             "Authorization" = "Bearer $env:GITHUB_TOKEN"
             "Content-Type" = "application/json"
           }
-          $discussions = ${{ steps.get-discussions.outputs.data }}.repository.discussions.nodes
+          $response = Invoke-RestMethod -Uri "https://api.github.com/graphql" -Method POST -Headers $headers -Body (ConvertTo-Json -InputObject @{ query = $query })
+          $discussions = $response.data.repository.discussions.nodes
+          $discussions_without_label = @()
+          foreach ($discussion in $discussions) {
+            if (-not ($discussion.labels.nodes.name -like "área-*")) {
+              $discussions_without_label += $discussion
+            }
+          }
+          Write-Output "Discussions without 'área-*' label: $($discussions_without_label.Count)"
+          Write-Output "Discussion titles:"
+          foreach ($discussion in $discussions_without_label) {
+            Write-Output "- $($discussion.title)"
+          }
+
+      - name: Add Area Unknown Label
+        if: steps.get-discussions.rc == '0'
+        run: |
+          $query = @"
+            mutation AddLabelToDiscussion($discussionId: ID!, $labelName: String!) {
+              addLabelsToLabelable(input: { labelableId: $discussionId, labelIds: [$labelName] }) {
+                clientMutationId
+              }
+            }
+"@
+          $headers = @{
+            "Authorization" = "Bearer $env:GITHUB_TOKEN"
+            "Content-Type" = "application/json"
+          }
+          $discussions = ${{ steps.get-discussions.outputs.stdout | ConvertFrom-Json }}
           foreach ($discussion in $discussions) {
             $has_area_label = $false
             foreach ($label in $discussion.labels.nodes) {
@@ -77,10 +89,15 @@ jobs:
               }
             }
             if (!$has_area_label) {
-              Write-Host "Discussion: $($discussion.title)"
+              Write-Host "Adding 'area-unknown' label to discussion: $($discussion.title)"
+              $variables = @{
+                discussionId = $discussion.id
+                labelName = "area-unknown"
+              }
               $body = @{
-                labels = @("area-unknown")
+                query = $query
+                variables = $variables
               } | ConvertTo-Json
-              Invoke-RestMethod -Uri "https://api.github.com/repos/$($env:GITHUB_REPOSITORY)/discussions/$($discussion.id)/labels" -Method POST -Headers $headers -Body $body | Out-Null
+              Invoke-RestMethod -Uri "https://api.github.com/graphql" -Method POST -Headers $headers -Body $body | Out-Null
             }
           }
