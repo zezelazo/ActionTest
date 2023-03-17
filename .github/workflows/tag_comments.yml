@@ -26,18 +26,15 @@ jobs:
         uses: actions/checkout@v2
 
       # Tag issues based on their labels, assignees, and creation time
-      - name: Get and label comments without Area label
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+     
+      - name: Tag issues
+        shell: pwsh
         run: |
-          gh auth login --with-token <<< $GITHUB_TOKEN
-          $comments = gh issue list --json 'number,title,labels' --jq '.[] | select( any(.labels[]; .name | test("^área-")) | not )'
-          $comments | ForEach-Object {
-            $comment = $_
-            $number = $comment.number
-            $title = $comment.title
-            Write-Host "Issue without area label: $title"
-            gh issue label $number --add "área-unknow"
+          $ignored_tag = 'type-repo_work'
+          $area_unknown_tag = 'area-unknown'
+          
+          # Get the list of issues and filter to get only: "open issues" and  "without specific labels" and filter the issues with no "area-" label assign
+          $issues = gh issue list --json number,labels,type --search "is:open -label:$ignored_tag" | ConvertFrom-Json | select number, labels, type | where-object { $_.labels.name -notlike "area-*" }
+          foreach ($issue in $issues){
+            Write-Host "$($issue.number) - $($issue.type)"
           }
-
-      
