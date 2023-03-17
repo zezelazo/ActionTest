@@ -36,5 +36,10 @@ jobs:
           # Get the list of issues and filter to get only: "open issues" and  "without specific labels" and filter the issues with no "area-" label assign
           $issues = gh issue list --json number,labels,type --search "is:open -label:$ignored_tag" | ConvertFrom-Json | select number, labels, type | where-object { $_.labels.name -notlike "area-*" }
           foreach ($issue in $issues){
-            Write-Host "$($issue.number) - $($issue.type)"
+            Write-Host "$($issue.number) - $($issue.title)"
+          }
+
+          $discussions =  gh api /repos/$GITHUB_REPOSITORY/discussions?per_page=100 -H "Accept: application/vnd.github.v3+json"
+          foreach ($discussion in $discussions) { 
+              Write-Host "Discussion: $($discussion.title)" 
           }
