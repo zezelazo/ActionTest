@@ -32,7 +32,7 @@ jobs:
         id: get-discussions
         shell: pwsh
         run: |
-          $query = @"
+          $query = "
             query {
               repository(name: "TestAction", owner: "zezelazo") {
                 discussions(first: 100) {
@@ -46,7 +46,7 @@ jobs:
                   }
                 }
               }
-            }"@
+            }"
             
           gh api graphql -f query="$query" --jq '.data.repository.discussions.nodes' > discussions.json
 
