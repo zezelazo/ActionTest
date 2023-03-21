@@ -46,7 +46,8 @@ jobs:
                   }
                 }
               }
-            }"@
+            }
+          "@
             
           gh api graphql -f query="$query" --jq '.data.repository.discussions.nodes' > discussions.json
 
