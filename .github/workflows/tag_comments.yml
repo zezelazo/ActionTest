@@ -33,7 +33,7 @@ jobs:
         run: |
           $query = @"
             query {
-              repository(name: "$env:GITHUB_REPOSITORY", owner: "$env:GITHUB_REPOSITORY_OWNER") {
+              repository(name: "TestAction", owner: "zezelazo") {
                 discussions(first: 100) {
                   nodes {
                     id
@@ -48,7 +48,10 @@ jobs:
               }
             }"@
             
-          $discussions = gh api graphql -f query="$query" --jq '.data.repository.discussions.nodes'
+          gh api graphql -f query="$query" --jq '.data.repository.discussions.nodes' > discussions.json
+
+          $issues = Get-Content discussions.json | ConvertFrom-Json
+          echo "Found $($discussions.Count) discussions"
 
           Write-Output "Discussions without 'área-*' label: $($discussions_without_label.Count)"
           Write-Output "Discussion titles:"
