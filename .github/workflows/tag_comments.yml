@@ -37,8 +37,7 @@ jobs:
               repository(name: "TestAction", owner: "zezelazo") {
                 discussions(first: 100) {
                   nodes {
-                    id
-                    title
+                    number
                     labels(first: 100) {
                       nodes {
                         name
