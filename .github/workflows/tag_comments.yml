@@ -19,6 +19,7 @@ jobs:
     permissions:
       issues: write 
       contents: read
+      discussions: write
 
     steps:
       # Checkout the code from the repository
@@ -37,7 +38,7 @@ jobs:
                   nodes {
                     id
                     title
-                    labels(first: 10) {
+                    labels(first: 100) {
                       nodes {
                         name
                       }
@@ -47,19 +48,8 @@ jobs:
               }
             }"@
             
-          $headers = @{
-            "Authorization" = "Bearer $env:GITHUB_TOKEN"
-            "Content-Type" = "application/json"
-          }
-          $response = Invoke-RestMethod -Uri "https://api.github.com/graphql" -Method POST -Headers $headers -Body (ConvertTo-Json -InputObject @{ query = $query })
-          $discussions = $response.data.repository.discussions.nodes
-          $discussions_without_label = @()
-          foreach ($discussion in $discussions) {
-            if (-not ($discussion.labels.nodes.name -like "área-*")) {
-              $discussions_without_label += $discussion
-            }
-          }
-          
+          $discussions = gh api graphql -f query="$query" --jq '.data.repository.discussions.nodes'
+
           Write-Output "Discussions without 'área-*' label: $($discussions_without_label.Count)"
           Write-Output "Discussion titles:"
           foreach ($discussion in $discussions_without_label) {
