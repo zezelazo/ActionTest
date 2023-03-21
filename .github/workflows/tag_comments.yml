@@ -34,7 +34,7 @@ jobs:
         run: |
           $query = @"
             query {
-              repository(name: 'ActionTest', owner: 'zezelazo') {
+               repository(name: "ActionTest", owner: "zezelazo") {
                 discussions(first: 100) {
                   nodes {
                     number
